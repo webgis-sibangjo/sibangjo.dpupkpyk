@@ -1485,7 +1485,17 @@ const PBG_REKAP = {
     function updateStats() {
     const s = computeStats(state.visible), T = state.records.length;
         const ok = s.byI.get('Berizin') || 0, no = s.byI.get('Belum Berizin') || 0, na = s.byI.get('Tidak Ada Data') || 0;
-        const fArr = sortDesc(s.byF), kArr = sortDesc(s.byK), lArr = sortDesc(s.byL).filter(([k]) => k !== UNMAPPED);
+    const allFungsi = [
+        'Fungsi Hunian',
+        'Fungsi Usaha',
+        'Fungsi Sosial Budaya',
+        'Fungsi Khusus'
+    ];
+    const fArr = allFungsi
+        .map(name => [name, s.byF.get(name) || 0])
+        .sort((a, b) => b[1] - a[1]);
+    const kArr = sortDesc(s.byK);
+    const lArr = sortDesc(s.byL).filter(([k]) => k !== UNMAPPED);
         const topF = fArr[0], topK = kArr[0];
             $('#kpiGrid').innerHTML =
             kpi('Total Bangunan', fmt(s.n), s.n === T ? 'Seluruh data' : fmt(pct(s.n, T), 1) + '% dari ' + fmt(T), true) +
