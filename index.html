@@ -1676,18 +1676,13 @@ if (!s.n) {
 }
 
 // 6. PERKEMBANGAN PENERBITAN PBG 2022–2026
-// Rekap PBG tingkat kota — tidak mengikuti filter bangunan pada peta.
-
 const pbgData = PBG_REKAP.tahunan;
 const totalPBG = PBG_REKAP.total;
-
 if (pbgData && pbgData.length >= 2) {
     const pbgFirst = pbgData[0];
     const pbgLast = pbgData[pbgData.length - 1];
-
     const growthRows = pbgData.slice(1).map((item, index) => {
         const previous = pbgData[index].jumlah;
-
         return {
             tahun: item.tahun,
             pertumbuhan: previous > 0
@@ -1695,18 +1690,15 @@ if (pbgData && pbgData.length >= 2) {
                 : null
         };
     });
-
     const averagePBG = totalPBG / pbgData.length;
     const growthLast = growthRows[growthRows.length - 1];
-
     let pbgText =
-        `<b>Perkembangan penerbitan PBG 2022–2026:</b> ` +
+        `Perkembangan penerbitan PBG 2022–2026` +
         `tercatat sebanyak <b>${fmt(totalPBG)} penerbitan</b>, ` +
         `dari ${fmt(pbgFirst.jumlah)} penerbitan pada ${pbgFirst.tahun} ` +
         `menjadi <b>${fmt(pbgLast.jumlah)}</b> pada ${pbgLast.tahun}. ` +
         `Rata-rata penerbitan mencapai ` +
         `<b>${fmt(averagePBG, 1)} per tahun</b>.`;
-
     if (growthLast && growthLast.pertumbuhan !== null) {
         pbgText +=
             ` Pertumbuhan pada ${growthLast.tahun} sebesar ` +
