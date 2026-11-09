@@ -2065,92 +2065,131 @@ function createKemantrenLayer(d) {
         }
         return roadLoading;
     }
-    async function init() {
-        bindUI();
-        const totalKemantren = CFG.kemantren.length;
-        let done = 0;
-        setLoad(0, 'Menyiapkan peta dan data bangunan…');
-        try {
-            await loadScript(CFG.kelurahanFile);
-            const kd = typeof kelurahan !== 'undefined' ? kelurahan : null;
-            if (kd && kd.features) {
-                state.kelIndex = kd.features.map((f, i) => {
-                    const p = f.properties || {};
-                    const l = parseFloat(String(p.Luas ?? '').replace(',', '.'));
-                    return { i, f, name: p.NAME_4 || ('Kelurahan ' + (i + 1)), kem: p.NAME_3 || '-', luas: isFinite(l) ? l : null, bb: geomInfo(f.geometry).bb, count: 0 };
-                });
-                kelLayer = L.geoJSON(kd, {
-                    pane: 'boundaryPane', interactive: false,
-                    style: {
-                        color: '#64748B',
-                        weight: 1.2,
-                        opacity: 0.8,
-                        dashArray: '4 4',
-                        fill: false,
-                        fillOpacity: 0
-                    },
-                    onEachFeature: (f, layer) => layer.bindTooltip(esc((f.properties || {}).NAME_4 || ''), { permanent: true, direction: 'center', className: 'kel-label' })
-                }).addTo(map);
-            }
-        } catch (err) { console.warn(err); toast('Batas kelurahan gagal dimuat'); }
+
+async function init() {
+    bindUI();
+
+    const totalKemantren = CFG.kemantren.length;
+    let done = 0;
+
+    setLoad(0, 'Menyiapkan peta dan data bangunan…');
+
+    // 1. Memuat batas Kelurahan (tidak masuk hitungan progress)
+    try {
+        await loadScript(CFG.kelurahanFile);
+
+        const kd = typeof kelurahan !== 'undefined' ? kelurahan : null;
+
+        if (kd && kd.features) {
+            state.kelIndex = kd.features.map((f, i) => {
+                const p = f.properties || {};
+                const l = parseFloat(String(p.Luas ?? '').replace(',', '.'));
+
+                return {
+                    i,
+                    f,
+                    name: p.NAME_4 || ('Kelurahan ' + (i + 1)),
+                    kem: p.NAME_3 || '-',
+                    luas: isFinite(l) ? l : null,
+                    bb: geomInfo(f.geometry).bb,
+                    count: 0
+                };
+            });
+
+            kelLayer = L.geoJSON(kd, {
+                pane: 'boundaryPane',
+                interactive: false,
+                style: {
+                    color: '#141414',
+                    weight: 1.4,
+                    opacity: 0.7,
+                    dashArray: '5 4',
+                    fill: false
+                },
+                onEachFeature: (f, layer) =>
+                    layer.bindTooltip(
+                        esc((f.properties || {}).NAME_4 || ''),
+                        {
+                            permanent: true,
+                            direction: 'center',
+                            className: 'kel-label'
+                        }
+                    )
+            }).addTo(map);
+        }
+    } catch (err) {
+        console.warn('Batas Kelurahan gagal dimuat:', err);
+        toast('Batas Kelurahan gagal dimuat');
+    }
+
+    // 2. Memuat batas Kemantren (tidak masuk hitungan progress)
     try {
         await loadScript(CFG.kemantrenFile);
+
         const kd = typeof kemantren !== 'undefined'
             ? kemantren
             : null;
+
         if (!kd || !kd.features) {
             throw new Error(
                 'Variabel kemantren tidak ditemukan di ' +
                 CFG.kemantrenFile
             );
         }
+
         kemLayer = createKemantrenLayer(kd);
+
         if (kemLayer) {
             kemLayer.addTo(map);
         }
     } catch (err) {
-        console.error(
-            'Gagal memuat batas Kemantren:',
-            err
-        );
-        toast(
-            'Batas Kemantren gagal dimuat'
-        );
+        console.error('Gagal memuat batas Kemantren:', err);
+        toast('Batas Kemantren gagal dimuat');
     }
-    done++;
-    setLoad(
-        Math.round(done / steps * 100)
-    );
-    await tick();
-        const failed = [];
-        for (let i = 0; i < totalKemantren; i++) {
-            const k = CFG.kemantren[i];
-            setLoad(
-                Math.round((done / totalKemantren) * 100),
-                `Memuat data Kemantren ${k.nama}… (${i + 1}/${totalKemantren})`
-            );
-            try {
-                await loadScript(k.file);
-                const d = k.get();
-                if (!d) {
-                    throw new Error('Variabel data kosong');
-                }
-                curKem = k.nama;
-                bldLayer.addData(d);
-            } catch (err) {
-                console.warn('Gagal memuat:', k.file, err);
-                failed.push(k.nama);
+
+    // 3. Hanya menghitung 14 data bangunan Kemantren
+    const failed = [];
+
+    for (let i = 0; i < totalKemantren; i++) {
+        const k = CFG.kemantren[i];
+
+        setLoad(
+            Math.round((done / totalKemantren) * 100),
+            `Memuat data Kemantren ${k.nama}… (${done + 1}/${totalKemantren})`
+        );
+
+        try {
+            await loadScript(k.file);
+
+            const d = k.get();
+
+            if (!d) {
+                throw new Error('Variabel data kosong');
             }
-            done++;
-            setLoad(
-                Math.round((done / totalKemantren) * 100),
-                `Memuat data Kemantren… (${done}/${totalKemantren})`
-            );
-            await tick();
+
+            curKem = k.nama;
+            bldLayer.addData(d);
+
+        } catch (err) {
+            console.warn('Gagal memuat:', k.file, err);
+            failed.push(k.nama);
         }
-        setLoad(100, 'Menyelesaikan pemuatan data Kemantren…');
+
+        done++;
+
+        setLoad(
+            Math.round((done / totalKemantren) * 100),
+            `Memuat data Kemantren… (${done}/${totalKemantren})`
+        );
+
         await tick();
-        const vote = new Map();
+    }
+
+    setLoad(100, 'Menyelesaikan pemuatan data…');
+    await tick();
+
+    const vote = new Map();
+
         for (const r of state.records) if (r.kel && r.p.id_kel != null) {
             const key = r.kem + '|' + r.p.id_kel; const m = vote.get(key) || new Map();
             m.set(r.kel, (m.get(r.kel) || 0) + 1); vote.set(key, m);
