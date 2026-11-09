@@ -2067,9 +2067,9 @@ function createKemantrenLayer(d) {
     }
     async function init() {
         bindUI();
-        const steps = 2 + CFG.kemantren.length;
+        const totalKemantren = CFG.kemantren.length;
         let done = 0;
-        setLoad(3, 'Memuat batas administrasi kelurahan…');
+        setLoad(0, 'Menyiapkan peta dan data bangunan…');
         try {
             await loadScript(CFG.kelurahanFile);
             const kd = typeof kelurahan !== 'undefined' ? kelurahan : null;
@@ -2093,8 +2093,6 @@ function createKemantrenLayer(d) {
                 }).addTo(map);
             }
         } catch (err) { console.warn(err); toast('Batas kelurahan gagal dimuat'); }
-        done++; setLoad(Math.round(done / steps * 100));
-    setLoad(Math.round(done / steps * 100),'Memuat batas administrasi Kemantren…');
     try {
         await loadScript(CFG.kemantrenFile);
         const kd = typeof kemantren !== 'undefined'
@@ -2125,19 +2123,33 @@ function createKemantrenLayer(d) {
     );
     await tick();
         const failed = [];
-        for (const k of CFG.kemantren) {
-            setLoad(Math.round(done / steps * 100), `Memuat bangunan Kemantren ${k.nama}… (${done}/${steps - 1})`);
+        for (let i = 0; i < totalKemantren; i++) {
+            const k = CFG.kemantren[i];
+            setLoad(
+                Math.round((done / totalKemantren) * 100),
+                `Memuat data Kemantren ${k.nama}… (${i + 1}/${totalKemantren})`
+            );
             try {
                 await loadScript(k.file);
                 const d = k.get();
-                if (!d) throw new Error('variabel data kosong');
+                if (!d) {
+                    throw new Error('Variabel data kosong');
+                }
                 curKem = k.nama;
                 bldLayer.addData(d);
-            } catch (err) { console.warn(k.file, err); failed.push(k.nama); }
-            done++; setLoad(Math.round(done / steps * 100));
+            } catch (err) {
+                console.warn('Gagal memuat:', k.file, err);
+                failed.push(k.nama);
+            }
+            done++;
+            setLoad(
+                Math.round((done / totalKemantren) * 100),
+                `Memuat data Kemantren… (${done}/${totalKemantren})`
+            );
             await tick();
         }
-        setLoad(100, 'Menyusun indeks & statistik…'); await tick();
+        setLoad(100, 'Menyelesaikan pemuatan data Kemantren…');
+        await tick();
         const vote = new Map();
         for (const r of state.records) if (r.kel && r.p.id_kel != null) {
             const key = r.kem + '|' + r.p.id_kel; const m = vote.get(key) || new Map();
