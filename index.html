@@ -90,7 +90,6 @@
     .t-ortho{background:linear-gradient(135deg,#6b6a4f,#a69d7d 40%,#5c6b4a 70%,#8d8a77)}
     .t-esri{background:linear-gradient(135deg,#2f3d2a,#5a6b45 45%,#3b4733 70%,#7a7a68)}
     .t-osm{background:linear-gradient(135deg,#f2efe9,#e8e0cf 40%,#cfe6c3 60%,#f7d9a8)}
-    .t-positron {background:linear-gradient(135deg,#f8fafc,#e2e8f0 45%,#cbd5e1 46%,#f8fafc 70%);}
     .sw-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;font-size:13px;font-weight:600}
     .sw-row small{display:block;font-weight:500;color:var(--mut);font-size:11px}
     .switch{position:relative;width:40px;height:22px;flex:0 0 auto}
@@ -501,7 +500,6 @@
                             <button class="bm" data-bm="ortho"><div class="thumb t-ortho"></div><span>Ortophoto 2023</span></button>
                             <button class="bm active" data-bm="esri"><div class="thumb t-esri"></div><span>ESRI Satelit</span></button>
                             <button class="bm" data-bm="osm"><div class="thumb t-osm"></div><span>OpenStreetMap</span></button>
-                            <button class="bm" data-bm="positron"><div class="thumb t-positron"></div><span>CARTO Positron</span></button>
                         </div>
                     </div>
                     <!-- LAYER -->
@@ -890,10 +888,6 @@ function fitKemantren(name, maxZoom = 17) {
         ]),
         esri: L.tileLayer(ESRI_URL, { ...tileOpt}),
         osm: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { ...tileOpt}),
-        positron: L.maplibreGL({
-        style: 'https://tiles.openfreemap.org/styles/positron',
-        attributionControl: false
-    })
     };
     let currentBase = 'esri';
     basemaps.esri.addTo(map);
