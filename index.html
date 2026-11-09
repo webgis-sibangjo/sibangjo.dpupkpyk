@@ -434,8 +434,8 @@
                         </div>
                         <div class="bm-grid" id="bmGrid">
                             <button class="bm" data-bm="ortho"><div class="thumb t-ortho"></div><span>Ortophoto 2023</span></button>
-                            <button class="bm" data-bm="esri"><div class="thumb t-esri"></div><span>ESRI Satelit</span></button>
-                            <button class="bm active" data-bm="osm"><div class="thumb t-osm"></div><span>OpenStreetMap</span></button>
+                            <button class="bm active" data-bm="esri"><div class="thumb t-esri"></div><span>ESRI Satelit</span></button>
+                            <button class="bm" data-bm="osm"><div class="thumb t-osm"></div><span>OpenStreetMap</span></button>
                             <button class="bm" data-bm="topo"><div class="thumb t-topo"></div><span>OpenTopoMap</span></button>
                         </div>
                     </div>
@@ -633,7 +633,7 @@
     <script>
     (function () {
     'use strict';
-    /* 1. KONFIGURASI */
+
     const CFG = {
         center: [-7.80329119, 110.37435397],
         zoom: 14,
@@ -648,7 +648,7 @@
         jalanFile: 'jalan.js',
         kemantren: [
             { nama: 'Danurejan',    file: 'Danurejan.js',    get: () => typeof danurejan    !== 'undefined' ? danurejan    : null },
-            { nama: 'Gedong Tengen',file: 'Gedongtengen.js', get: () => typeof gedongtengen !== 'undefined' ? gedongtengen : null },
+            { nama: 'Gedongtengen',file: 'Gedongtengen.js', get: () => typeof gedongtengen !== 'undefined' ? gedongtengen : null },
             { nama: 'Gondokusuman', file: 'Gondokusuman.js', get: () => typeof gondokusuman !== 'undefined' ? gondokusuman : null },
             { nama: 'Jetis',        file: 'Jetis.js',        get: () => typeof jetis        !== 'undefined' ? jetis        : null },
             { nama: 'Tegalrejo',    file: 'Tegalrejo.js',    get: () => typeof tegalrejo    !== 'undefined' ? tegalrejo    : null },
@@ -673,7 +673,7 @@
     const EXTRA_COLORS = ['#00a6a6', '#2e7d32', '#795548', '#1565c0', '#ef6c00', '#c2185b', '#607d8b'];
     const IZIN_COLOR = { 'Berizin': '#1E9E4A', 'Belum Berizin': '#E53935', 'Tidak Ada Data': '#9E9E9E' };
     const UNMAPPED = 'Tidak Terpetakan';
-    /* 2. UTILITAS */
+    
     const $ = s => document.querySelector(s);
     const $$ = s => Array.from(document.querySelectorAll(s));
     const fmt = (n, d = 0) => Number(n || 0).toLocaleString('id-ID', { maximumFractionDigits: d, minimumFractionDigits: d });
@@ -778,22 +778,17 @@
     }
 function fitKemantren(name, maxZoom = 17) {
     if (!kemLayer) return;
-
     let bounds = null;
-
     kemLayer.eachLayer(layer => {
         const props = layer.feature?.properties || {};
         const nama = props.kemantren || '';
-
         if (norm(nama) === norm(name)) {
             const b = layer.getBounds();
-
             if (b.isValid()) {
                 bounds = b;
             }
         }
     });
-
     if (bounds) {
         map.fitBounds(bounds, {
             padding: [35, 35],
@@ -804,7 +799,7 @@ function fitKemantren(name, maxZoom = 17) {
         console.warn('Batas Kemantren tidak ditemukan:', name);
     }
 }
-    /* 3. PETA & BASEMAP */
+
     const map = L.map('map', {
         center: CFG.center,
         zoom: CFG.zoom,
@@ -1084,13 +1079,24 @@ function match(r) {
         msFungsi.setOptions([...fc.entries()].sort((a, b) => b[1] - a[1]).map(([k, n]) => ({ value: k, label: k, count: n, color: colorFungsi(k) })));
         const kc = countBy(recs, 'kem');
         msKem = MultiSelect($('#msKem'), {
-            allText: 'Semua Kemantren', onChange: s => {
+            allText: 'Semua Kemantren',
+            onChange: s => {
                 F.kem = s;
-                if (msKel.setOptions(kelOptions())) F.kel = msKel.get();
+                if (msKel.setOptions(kelOptions())) {
+                    F.kel = msKel.get();
+                }
                 applyFilters();
             }
         });
-        msKem.setOptions(CFG.kemantren.filter(k => kc.has(k.nama)).map(k => ({ value: k.nama, label: k.nama, count: kc.get(k.nama) })));
+        msKem.setOptions(
+            [...kc.entries()]
+                .sort((a, b) => a[0].localeCompare(b[0], 'id'))
+                .map(([nama, jumlah]) => ({
+                    value: nama,
+                    label: nama,
+                    count: jumlah
+                }))
+        );
         msKel = MultiSelect($('#msKel'), { allText: 'Semua Kelurahan', onChange: s => { F.kel = s; applyFilters(); } });
         msKel.setOptions(kelOptions());
         const ic = countBy(recs, 'izin');
