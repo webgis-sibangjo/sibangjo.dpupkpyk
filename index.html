@@ -938,11 +938,6 @@ function fitKemantren(name, maxZoom = 17) {
         style: styleFor,
         onEachFeature: (f, layer) => {
             const p = f.properties || {};
-            console.log(
-                'AUDIT ATRIBUT BANGUNAN:',
-                Object.keys(p),
-                p
-            );
             const gi = geomInfo(f.geometry);
             const k = state.kelIndex.length ? findKel(gi.cx, gi.cy) : null;
             const id = [p.id_kel, p.id_fungsi, p.id_objek].map(v => (v == null || v === '' ? '-' : v)).join('.');
