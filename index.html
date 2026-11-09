@@ -610,9 +610,7 @@
         <canvas id="chPbgTahunan"></canvas>
     </div>
     <div class="pbg-footnote">
-        Rekapitulasi catatan tahun 2022–2026.
-        Data 2026 merupakan data berjalan per 30 Oktober 2026.
-        Jumlah merupakan catatan rekap, bukan jumlah bangunan atau dokumen unik.
+        Rekapitulasi catatan tahun 2022–2026, dimana data 2026 merupakan data berjalan per 30 Oktober 2026.
     </div>
 </div>
     <!-- 3. JUMLAH BANGUNAN PER KEMANTREN -->
@@ -1497,221 +1495,194 @@ const PBG_REKAP = {
             kpi('Kemantren Terbanyak', topK ? esc(topK[0]) : '-', topK ? fmt(topK[1]) + ' bangunan' : '', false, true) +
             kpi('Kelurahan Tercakup', fmt(lArr.length), fmt(s.byK.size) + ' kemantren');
 // ANALISIS OTOMATIS // 
-const ins = [];
-if (!s.n) {
 
+// ANALISIS OTOMATIS — MENGIKUTI FILTER AKTIF
+const ins = [];
+
+if (!s.n) {
     ins.push([
         'warn',
-        'Tidak ada bangunan yang sesuai dengan filter aktif.'
+        'Tidak ada bangunan yang sesuai dengan filter aktif. Ubah atau reset filter untuk melihat analisis.'
     ]);
 } else {
 
-    // 1. KOMPOSISI FUNGSI //
+    // 1. KOMPOSISI FUNGSI BANGUNAN
     if (fArr.length) {
         const top1 = fArr[0];
         const top2 = fArr[1];
-        const top1Pct = pct(
-            top1[1],
-            s.n
-        );
+
+        const top1Pct = pct(top1[1], s.n);
+
         let functionText =
-            `<b>${esc(top1[0])}</b> mendominasi dengan ` +
-            `<b>${fmt(top1Pct, 1)}%</b> dari ` +
-            `${fmt(s.n)} bangunan`;
+            `Fungsi bangunan terbanyak adalah ` +
+            `<b>${esc(top1[0])}</b>, sebanyak ` +
+            `<b>${fmt(top1[1])} bangunan (${fmt(top1Pct, 1)}%)</b> ` +
+            `dari ${fmt(s.n)} bangunan yang sedang ditampilkan.`;
+
         if (top2) {
-            const top2Pct = pct(
-                top2[1],
-                s.n
-            );
-            const top2TotalPct = pct(
-                top1[1] + top2[1],
-                s.n
-            );
             functionText +=
-                `, disusul <b>${esc(top2[0])}</b> ` +
-                `(${fmt(top2Pct, 1)}%). ` +
-                `Dua fungsi terbesar mencakup ` +
-                `<b>${fmt(top2TotalPct, 1)}%</b> data.`;
-        } else {
-            functionText += '.';
+                ` Berikutnya adalah <b>${esc(top2[0])}</b> ` +
+                `sebanyak ${fmt(top2[1])} bangunan ` +
+                `(${fmt(pct(top2[1], s.n), 1)}%).`;
         }
 
-        ins.push([
-            '',
-            functionText
-        ]);
+        ins.push(['', functionText]);
     }
 
-    // 2. SEBARAN BANGUNAN  // 
-    if (kArr.length) {
-        const topK = kArr[0];
-        const top3Count = kArr
+    // 2. SEBARAN BANGUNAN BERDASARKAN WILAYAH
+    const locationRows = lArr.length ? lArr : kArr;
+    const locationLabel = lArr.length
+        ? 'kelurahan'
+        : 'kemantren';
+
+    if (locationRows.length) {
+        const topLocation = locationRows[0];
+
+        const top3Count = locationRows
             .slice(0, 3)
-            .reduce(
-                (sum, [, n]) => sum + n,
-                0
-            );
-        const top3Pct = pct(
-            top3Count,
-            s.n
-        );
+            .reduce((sum, [, count]) => sum + count, 0);
+
+        const top3Pct = pct(top3Count, s.n);
+
         let distributionText =
-            `Sebaran bangunan tertinggi berada di ` +
-            `<b>${esc(topK[0])}</b> ` +
-            `dengan ${fmt(topK[1])} bangunan ` +
-            `(${fmt(pct(topK[1], s.n), 1)}% dari data).`;
-        if (kArr.length >= 3) {
+            `Pada wilayah yang sedang difilter, jumlah bangunan ` +
+            `terbanyak berada di <b>${esc(topLocation[0])}</b>, ` +
+            `sebanyak <b>${fmt(topLocation[1])} bangunan</b> ` +
+            `(${fmt(pct(topLocation[1], s.n), 1)}%).`;
+
+        if (locationRows.length > 1) {
             distributionText +=
-                ` Tiga kemantren teratas mencakup ` +
-                `<b>${fmt(top3Pct, 1)}%</b> data.`;
+            ` Akumulasi hingga tiga ${locationLabel} dengan jumlah ` +
+            `bangunan terbanyak mencakup <b>${fmt(top3Pct, 1)}%</b> ` +
+            `dari seluruh bangunan yang tampil.`;
         }
-        ins.push([
-            '',
-            distributionText
-        ]);
+
+        ins.push(['', distributionText]);
     }
 
-    // 3. KARAKTERISTIK BANGUNAN // 
+    // 3. KARAKTERISTIK LUAS BANGUNAN
     const areaRows = state.visible
         .map(r => {
-            const p = r.p || {};
-            const value = Number(
-                p.ar_bgn_dg
-            );
+            const value = Number((r.p || {}).ar_bgn_dg);
             return Number.isFinite(value) && value > 0
                 ? value
                 : null;
         })
-        .filter(
-            value => value !== null
-        );
-    const areaCoverage = pct(
-        areaRows.length,
-        s.n
-    );
+        .filter(value => value !== null);
+
     if (areaRows.length) {
-        const avgArea =
-            areaRows.reduce(
-                (sum, value) => sum + value,
-                0
-            ) / areaRows.length;
-        const areaText =
-            `Data luas bangunan tersedia pada ` +
-            `<b>${fmt(areaCoverage, 1)}%</b> ` +
-            `bangunan yang tampil, dengan rata-rata ` +
-            `<b>${fmt(avgArea, 1)} m²</b> ` +
-            `dari ${fmt(areaRows.length)} bangunan yang memiliki nilai luas.`;
+        const totalArea = areaRows.reduce(
+            (sum, value) => sum + value,
+            0
+        );
+
+        const avgArea = totalArea / areaRows.length;
+        const areaCoverage = pct(areaRows.length, s.n);
+
         ins.push([
             '',
-            areaText
+            `Dari ${fmt(s.n)} bangunan yang tampil, terdapat ` +
+            `<b>${fmt(areaRows.length)} bangunan (${fmt(areaCoverage, 1)}%)</b> ` +
+            `yang memiliki data luas. Rata-rata luas bangunan tercatat ` +
+            `<b>${fmt(avgArea, 1)} m²</b>, dengan akumulasi luas ` +
+            `<b>${fmt(totalArea, 1)} m²</b>.`
         ]);
     } else {
         ins.push([
             'warn',
-            `Data luas bangunan belum tersedia pada ` +
-            `bangunan yang tampil.`
+            'Data luas bangunan belum tersedia pada bangunan yang sesuai dengan filter aktif.'
         ]);
     }
 
-    // 4. KUALITAS & KELENGKAPAN DATA // 
+    // 4. STATUS PERIZINAN BANGUNAN
+    const permitRows = [
+        ['Berizin', s.byI.get('Berizin') || 0],
+        ['Belum Berizin', s.byI.get('Belum Berizin') || 0],
+        ['Tidak Ada Data', s.byI.get('Tidak Ada Data') || 0]
+    ];
+
+    const permitTotal = permitRows.reduce(
+        (sum, [, count]) => sum + count,
+        0
+    );
+
+    if (permitTotal > 0) {
+        const permitText = permitRows
+            .filter(([, count]) => count > 0)
+            .map(([label, count]) =>
+                `<b>${esc(label)}</b> ${fmt(count)} bangunan ` +
+                `(${fmt(pct(count, permitTotal), 1)}%)`
+            )
+            .join('; ');
+
+        const belumBerizin = s.byI.get('Belum Berizin') || 0;
+        const tidakAdaData = s.byI.get('Tidak Ada Data') || 0;
+
+        let permitInsight =
+            `Komposisi status perizinan pada data yang tampil: ${permitText}.`;
+
+        if (belumBerizin > 0 || tidakAdaData > 0) {
+            permitInsight +=
+                ` Terdapat <b>${fmt(belumBerizin + tidakAdaData)} bangunan</b> ` +
+                `yang berstatus belum berizin atau belum memiliki data status.`;
+        }
+
+        ins.push([
+            (belumBerizin + tidakAdaData) > 0 ? 'warn' : '',
+            permitInsight
+        ]);
+    }
+
+    // 5. KUALITAS DAN KELENGKAPAN DATA
     let ownerCount = 0;
     let addressCount = 0;
     let identityComplete = 0;
+
     for (const r of state.visible) {
         const p = r.p || {};
+
         const owner =
             p.pemilik != null &&
             String(p.pemilik).trim() !== '';
+
         const address =
             p.alamat != null &&
             String(p.alamat).trim() !== '';
-        if (owner) {
-            ownerCount++;
-        }
-        if (address) {
-            addressCount++;
-        }
-        if (owner && address) {
-            identityComplete++;
-        }
+
+        if (owner) ownerCount++;
+        if (address) addressCount++;
+        if (owner && address) identityComplete++;
     }
-    const identityCoverage = pct(
-        identityComplete,
-        s.n
-    );
-    const ownerCoverage = pct(
-        ownerCount,
-        s.n
-    );
-    const addressCoverage = pct(
-        addressCount,
-        s.n
-    );
-    let identityText =
-        `Kelengkapan identitas pemilik dan alamat ` +
-        `mencapai <b>${fmt(identityCoverage, 1)}%</b> ` +
-        `dari data yang tampil`;
-    if (
-        ownerCount > 0 ||
-        addressCount > 0
-    ) {
-        identityText +=
-            `; data pemilik terisi ` +
-            `<b>${fmt(ownerCoverage, 1)}%</b> ` +
-            `dan alamat ` +
-            `<b>${fmt(addressCoverage, 1)}%</b>.`;
-    } else {
-        identityText +=
-            `. Data identitas masih belum tersedia.`;
-    }
+
+    const identityCoverage = pct(identityComplete, s.n);
+    const ownerCoverage = pct(ownerCount, s.n);
+    const addressCoverage = pct(addressCount, s.n);
+
+    const missingIdentity = s.n - identityComplete;
+
+    const identityText =
+        `Kelengkapan identitas pemilik dan alamat secara bersamaan ` +
+        `mencapai <b>${fmt(identityCoverage, 1)}%</b>. ` +
+        `Data pemilik terisi pada <b>${fmt(ownerCoverage, 1)}%</b> ` +
+        `bangunan, sedangkan alamat terisi pada ` +
+        `<b>${fmt(addressCoverage, 1)}%</b> bangunan. ` +
+        `Sebanyak <b>${fmt(missingIdentity)} bangunan</b> ` +
+        `belum memiliki kedua informasi tersebut secara lengkap.`;
+
     ins.push([
-        identityCoverage < 50
-            ? 'warn'
-            : '',
+        identityCoverage < 50 ? 'warn' : '',
         identityText
     ]);
+}
 
-    // 6. ANALISIS PENERBITAN PBG
-    const pbgData = PBG_REKAP.tahunan;
-    const totalPBG = PBG_REKAP.total;
-    const pbgFirst = pbgData[0];
-    const pbgLast = pbgData[pbgData.length - 1];
-    const growthRows = pbgData.slice(1).map(
-        (item, index) => {
-            const previous = pbgData[index].jumlah;
-    
-            return {
-                tahun: item.tahun,
-                pertumbuhan: (
-                    (item.jumlah - previous) /
-                    previous
-                ) * 100
-            };
-        }
-    );
-    const averagePBG = totalPBG / pbgData.length;
-    const growth2026 = growthRows[
-        growthRows.length - 1
-    ];
-    ins.push([
-        '',
-        `<b>Perkembangan penerbitan PBG 2022–2026:</b> ` +
-        `tercatat sebanyak <b>${fmt(totalPBG)}</b> penerbitan, ` +
-        `meningkat dari ${fmt(pbgFirst.jumlah)} pada 2022 ` +
-        `menjadi <b>${fmt(pbgLast.jumlah)}</b> pada 2026. ` +
-        `Rata-rata penerbitan mencapai ` +
-        `<b>${fmt(averagePBG, 1)} per tahun</b>, ` +
-        `dengan pertumbuhan 2026 sebesar ` +
-        `<b>${fmt(growth2026.pertumbuhan, 1)}%</b> ` +
-        `dibandingkan 2025.`
-    ]);
-    }
-    $('#analysis').innerHTML = ins
-        .map(
-            ([c, t], i) =>
-                `<li class="${c}" data-i="${i + 1}">${t}</li>`
-        )
-        .join('');
+// TAMPILKAN HASIL ANALISIS
+$('#analysis').innerHTML = ins
+    .map(
+        ([c, t], i) =>
+            `<li class="${c}" data-i="${i + 1}">${t}</li>`
+    )
+    .join('');
+
             if (typeof Chart === 'undefined') return;
 if (!charts.fungsi) makeCharts();
 
