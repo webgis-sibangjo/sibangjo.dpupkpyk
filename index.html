@@ -203,7 +203,7 @@
     #btnPanel{top:12px;left:12px}
     #btnReset{top:12px;right:50px}
     #statusPill{top:12px;left:50%;transform:translateX(-50%);font-weight:600;font-size:12.5px;padding:7px 8px 7px 14px;white-space:nowrap}
-    #statusPill b{color:#263B53)}
+    #statusPill b{color:#263B53}
     #statusPill .chip{display:none;background:var(--bk);color:var(--ye);border:0;border-radius:999px;padding:4px 10px;font-size:11px;font-weight:700}
     #statusPill.filtered .chip{display:inline-flex;align-items:center;gap:4px}
     .tools{position:absolute;top:12px;right:12px;z-index:1000;display:flex;flex-direction:column;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--sh);overflow:hidden}
@@ -1485,8 +1485,7 @@ const PBG_REKAP = {
         return `<div class="kpi${dark ? ' k-dark' : ''}"><div class="kl">${label}</div><div class="kv${small ? ' sm' : ''}">${value}</div>${sub ? `<div class="ks">${sub}</div>` : ''}</div>`;
     }
     function updateStats() {
-        state.statsDirty = false;
-        const s = computeStats(state.visible), T = state.records.length;
+    const s = computeStats(state.visible), T = state.records.length;
         const ok = s.byI.get('Berizin') || 0, no = s.byI.get('Belum Berizin') || 0, na = s.byI.get('Tidak Ada Data') || 0;
         const fArr = sortDesc(s.byF), kArr = sortDesc(s.byK), lArr = sortDesc(s.byL).filter(([k]) => k !== UNMAPPED);
         const topF = fArr[0], topK = kArr[0];
@@ -1782,6 +1781,7 @@ setChart(
     Object.values(areaClass),
     '#263B53'
 );
+        state.statsDirty = false;
     }
     function setChart(ch, labels, data, colors) {
         ch.data.labels = labels; ch.data.datasets[0].data = data; ch.data.datasets[0].backgroundColor = colors; ch.update();
@@ -1933,11 +1933,27 @@ charts.pbgTahunan = new Chart(
     function bindUI() {
         $('#btnMenu').addEventListener('click', () => toggleSidebar());
         if (window.innerWidth <= 768) toggleSidebar(true);
-        $$('.tabs button').forEach(b => b.addEventListener('click', () => {
-            $$('.tabs button').forEach(x => x.classList.toggle('active', x === b));
-            $$('.tab-pane').forEach(p => p.classList.toggle('active', p.id === b.dataset.tab));
-            if (b.dataset.tab === 'tabStat' && state.statsDirty) setTimeout(updateStats, 30);
-        }));
+        $$('.tabs button').forEach(b => {
+        b.addEventListener('click', () => {
+            $$('.tabs button').forEach(x => {
+                x.classList.toggle('active', x === b);
+            });
+    
+            $$('.tab-pane').forEach(p => {
+                p.classList.toggle('active', p.id === b.dataset.tab);
+            });
+    
+            if (b.dataset.tab === 'tabStat') {
+                requestAnimationFrame(() => {
+                    updateStats();
+    
+                    Object.values(charts).forEach(chart => {
+                        if (chart) chart.resize();
+                    });
+                });
+            }
+        });
+    });
         $$('#searchModes button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
         $('#btnSearch').addEventListener('click', doSearch);
         $('#searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
