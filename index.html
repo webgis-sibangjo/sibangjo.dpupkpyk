@@ -2479,21 +2479,31 @@
                     fill: true, fillColor: fill, fillOpacity: state.opacity
                 };
             }
-            function findKel(x, y) {
-                for (const k of state.kelIndex) {
-                    const b = k.bb;
-                    if (x < b[0] || x > b[2] || y < b[1] || y > b[3]) continue;
-                    if (geomInside(x, y, k.f.geometry)) return k;
+            function findKel(x, y, kemName) {
+            const targetKem = norm(kemName);
+            for (const k of state.kelIndex) {
+                if (norm(k.kem) !== targetKem) continue;
+                const b = k.bb;
+                if (
+                    x < b[0] ||
+                    x > b[2] ||
+                    y < b[1] ||
+                    y > b[3]
+                ) continue;
+                if (geomInside(x, y, k.f.geometry)) {
+                    return k;
                 }
-                return null;
             }
+        
+            return null;
+        }
             const bldLayer = L.geoJSON(null, {
                 renderer: bldRenderer,
                 style: styleFor,
                 onEachFeature: (f, layer) => {
                     const p = f.properties || {};
                     const gi = geomInfo(f.geometry);
-                    const k = state.kelIndex.length ? findKel(gi.cx, gi.cy) : null;
+                    const k = state.kelIndex.length? findKel(gi.cx, gi.cy, curKem): null;
                     const id = [p.id_kel, p.id_fungsi, p.id_objek].map(v => (v == null || v === '' ? '-' : v)).join('.');
                     const r = {
                         layer, p, id, kem: curKem,
